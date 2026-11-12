@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "XZWH9viCiFA=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\CJ3040305\\Documents\\Atividades de Argolo\\LOPA\\Simple-Shot\\jogo\\jogo.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\CJ3040305\\.nuget\\packages\\raylib-cs\\8.1.0\\raylib-cs.8.1.0.nupkg.sha512"
+  ],
+  "logs": []
+}
