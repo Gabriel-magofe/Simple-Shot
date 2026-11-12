@@ -1,2 +1,5 @@
 venv
 .env
+jogo/bin/
+jogo/obj/
+jogo/jogo.csproj
