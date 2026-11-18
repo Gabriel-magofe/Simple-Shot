@@ -42,6 +42,9 @@ class Player : Cubo
 {
     public Direcao olhando = Direcao.Frente;
     public int arm = 1;
+    public bool atirando = false;
+    public float munição = 3;
+    public float golpear = 1;
     public int vida;
     public bool pulando = false;
     public bool sautCarregando = false;
@@ -90,6 +93,10 @@ class Player : Cubo
         };
 
         onde += direcao * 10f * dt;
+    }
+    public void ataque(float dt)
+    {
+        
     }
     public override void aparecer()
     {
