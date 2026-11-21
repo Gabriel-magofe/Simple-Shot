@@ -34,7 +34,7 @@ class Cubo(Vector3 a, Vector3 b, int tipo=1)
 
     public virtual void aparecer()
     {
-        Raylib.DrawCubeV(onde, tamanho, tipo==1?Color.Gray:new(105,100,83,255));
+        Raylib.DrawCubeV(onde, tamanho, tipo==1?Color.Gray:tipo==2?new(105,100,83,255):new(170,170,170,255));
         Raylib.DrawCubeWiresV(onde, tamanho, Color.Black);
     }
     public static float Distancia(BoundingBox a, BoundingBox b)
@@ -107,13 +107,38 @@ class Player : Cubo
             
             if (Raylib.CheckCollisionBoxes(hitbox[0],i.hitbox[0]))
             {
-                if (!pulando) onde.Y = i.hitbox[0].Max.Y + (tamanho.Y / 2.0f);
-                queda = 0f;
-                pulando = false;
-                if (!sautCarregando) saut_carga =45f;
+                if (onde.Y  > i.onde.Y)
+                {
+                    if (!pulando) onde.Y = i.hitbox[0].Max.Y + (tamanho.Y / 2.0f);
+                    queda = 0f;
+                    pulando = false;
+                    if (!sautCarregando) saut_carga =45f;
+                }
+                
             }
         }
 
+    }
+    public void ai_minha_cabeca(List<Cubo> a)
+    {
+        
+        if (!pulando || (saut_carga <= queda)) return;
+
+        foreach (var i in a)
+        {
+            if (Distancia(hitbox[0], i.hitbox[0]) > 8f) continue;
+
+            if (Raylib.CheckCollisionBoxes(hitbox[0], i.hitbox[0]))
+            {
+                
+                if (onde.Y < i.onde.Y)
+                {
+                    onde.Y = i.hitbox[0].Min.Y - (tamanho.Y / 2.0f);
+                    pulando = false;
+                    saut_carga = 45f;
+                }
+            }
+        }
     }
     public void mover(float dt, int dir, List<Cubo> a)
     {
@@ -130,7 +155,7 @@ class Player : Cubo
         float X_antes = onde.X;
         float Z_antes = onde.Z;
 
-        onde += direcao * 12f * dt;
+        onde += direcao * 22f * dt;
 
         onde.X = Math.Clamp(onde.X, -319f, 319f);
         foreach (var i in a)
@@ -159,7 +184,7 @@ class Player : Cubo
         if (arm == 1)
         {
 
-            cord_de_ini = onde + (direita * 0.9f) + (frente * 0.8f);
+            cord_de_ini = onde + (direita * 0.9f) + (frente * 1.7f);
 
             float alc = 32.0f;
             cord_de_fim = cord_de_ini + (frente * alc);
@@ -224,7 +249,7 @@ class Player : Cubo
 }
 class SimpleShot
 {
-    static Player jojo = new(new Vector3(0.0f, 0f, 0.0f),new Vector3(1.2f, 2.5f, 1.2f), 3);
+    static Player jojo = new(new Vector3(0.0f, 60f, 0.0f),new Vector3(1.2f, 2.5f, 1.2f), 3);
 
     static void Main()
     {
@@ -247,11 +272,47 @@ class SimpleShot
 
         List<Cubo> plat = [
             chao, 
-            new(new(0.0f, 2.7f, 0.0f),new(2.3f, 5.2f, 2.3f),2),
-            new(new(0.0f, 1f, 0.0f),new(7.0f, 1.8f, 7.0f),2),
-            new(new(34f,5.2f,0),new(1f, 10.2f,25f),2),
-            new(new(-34f,5.2f,0),new(1f, 10.2f,25f),2),
+            new(new(4f, 7f, 4f),new(7.0f, 1.8f, 7.0f),3),
+            new(new(-4f, 14f, 4f),new(7.0f, 1.8f, 7.0f),3),
+            new(new(-4f, 21f, -4f),new(7.0f, 1.8f, 7.0f),3),
+            new(new(4f, 28f, -4f),new(7.0f, 1.8f, 7.0f),3),
+            new(new(4f, 35f, 4f),new(7.0f, 1.8f, 7.0f),3),
+            new(new(-4f, 42f, 4f),new(7.0f, 1.8f, 7.0f),3),
+            
+            new(new(23f, 49f, 0f),new(46.0f, 1.8f, 100.0f)),
+            new(new(-31f, 49f, 0f),new(46.0f, 1.8f, 100.0f)),
+            new(new(-4f, 49f, 30f),new(8.0f, 1.8f, 40.0f)),
+            new(new(-4f, 49f, -24.5f),new(8.0f, 1.8f, 51.0f)),
+
+            new(new(38f,5.2f,0),new(1f, 10.2f,48f),2),
+            new(new(-38f,5.2f,0),new(1f, 10.2f,48f),2),
+            new(new(0f,5.2f,38f),new(48f, 10.2f,1f),2),
+            new(new(-0f,5.2f,-38f),new(48f, 10.2f,1f),2),
+
+            new(new(105f,10.3f,0),new(135.75f,20.4f,1f),2),
+            new(new(252f,10.3f,0),new(135.75f,20.4f,1f),2),
+            new(new(-105f,10.3f,0),new(135.75f,20.4f,1f),2),
+            new(new(-252f,10.3f,0),new(135.75f,20.4f,1f),2),
+            new(new(0,10.3f,105f),new(1f,20.4f,135.75f),2),
+            new(new(0f,10.3f,252f),new(1f,20.4f,135.75f),2),
+            new(new(0,10.3f,-105f),new(1f,20.4f,135.75f),2),
+            new(new(0f,10.3f,-252f),new(1f,20.4f,135.75f),2),
+
+            new(new(160.0f, 2.7f, 160.0f),new(2.3f, 5.2f, 2.3f),3),
+            new(new(160.0f, 1f, 160.0f),new(7.0f, 1.8f, 7.0f),3),
+
+            
+
         ];
+
+        for (int x = 300; x >= 20; x -= 20)
+        {
+            for (int z = 300; z >= 20; z -= 20)
+            {
+                if (x<=180 && z<=180 && x>=140 && z>=140 || x <=40 && z<=40) continue;
+                plat.Add(new(new(x,3.35f,z),new(7f, 6.5f, 7f), 2));
+            }
+        }
         float time_tiro = 0;
         // float dano = 0;
         Raylib.SetTargetFPS(60);
@@ -274,15 +335,15 @@ class SimpleShot
                 if (Raylib.IsKeyDown(KeyboardKey.S)) jojo.mover(dt, 1, plat);
                 if (Raylib.IsKeyDown(KeyboardKey.A)) jojo.mover(dt, 2,plat);
                 if (Raylib.IsKeyDown(KeyboardKey.D)) jojo.mover(dt, 3,plat);
-                if (Raylib.IsKeyDown(KeyboardKey.Space) && !jojo.pulando)
+                if (Raylib.IsKeyDown(KeyboardKey.Up) && !jojo.pulando)
                 {
                     jojo.sautCarregando = true;
-                    jojo.saut_carga += 16f*dt;
-                    if (jojo.saut_carga > 80f) jojo.saut_carga = 80f;
+                    jojo.saut_carga += 20f*dt;
+                    if (jojo.saut_carga > 60f) jojo.saut_carga = 60f;
                     
                 }
-                else if (Raylib.IsKeyReleased(KeyboardKey.Space)) {jojo.pulando = true; jojo.sautCarregando = false;}
-                if (jojo.pulando) jojo.Pulo(dt);
+                else if (Raylib.IsKeyReleased(KeyboardKey.Up)) {jojo.pulando = true; jojo.sautCarregando = false;}
+                if (jojo.pulando) {jojo.Pulo(dt); jojo.ai_minha_cabeca(plat);}
 
                 joOffset = jojo.olhando switch
                 {
@@ -336,14 +397,15 @@ class SimpleShot
                     time_tiro += dt;
                     Raylib.DrawLine3D(jojo.cord_de_ini,jojo.cord_de_fim,Color.Orange);
                     Raylib.DrawSphere(jojo.cord_de_fim,0.08f,Color.Orange);
+                    Raylib.DrawSphereWires(jojo.cord_de_fim,0.1f,4,4,Color.Yellow);
                     if (time_tiro > 0.25f) {jojo.atirando = false;time_tiro=0;}
                 }
-                
-                jojo.aparecer();
 
                 Raylib.DrawSphere(jojo.onde, -33.0f, new Color(48, 50, 164,255)); 
-                Raylib.DrawSphere(jojo.onde, -30.0f, new Color(48, 50, 164, 10)); 
+                Raylib.DrawSphere(jojo.onde, -30.0f, new Color(48, 50, 164, 160)); 
                 Raylib.DrawSphere(jojo.onde, -26.0f, new Color(48, 50, 164, 80));  
+
+                jojo.aparecer();
 
                 Raylib.EndMode3D();
                 
