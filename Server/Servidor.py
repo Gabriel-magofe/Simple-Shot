@@ -8,57 +8,34 @@ PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(PATH))
 from Banco import Banco
 
-
 HOST = '0.0.0.0'
 PORT_UDP = 5005
 PORT_TCP = 5006
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.bind((HOST, PORT_UDP))
-        
-def servidor_login():
-    s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s_tcp.bind((HOST, PORT_TCP))
-    s_tcp.listen(5)
-    print(f"Login rodando na porta {PORT_TCP}...")
-    while True:
-        conn, addr = s_tcp.accept()
-        print(f"Conexão de login recebida de {addr}")
-        data = conn.recv(1024).decode('utf-8')
-        if data:
-            response = Banco.verificar_login(data)
-            conn.sendall(response.encode('utf-8'))
-        conn.close()
-thread_login = threading.Thread(target=servidor_login, daemon=True)
-thread_login.start()
-
+print(f"Rodando na porta {PORT_UDP}...")  
+     
 gamers = {}
 partida = {}
 tokens_ativos = {}
 intervalo = 0.05
-MAXJGDRS = 50
-VDMAX = 1000
-DNTIRO = 50
-FREQMSGPS = 20
-TMNHAREN = 1000
-nE= 0
-
-print(f"Rodando na porta {PORT_UDP}...")
+LIMITE= 50
 
 def verify_new_player(addr_cli, d_traduzido):
     token = d_traduzido.removeprefix("CONNECT:")
     if addr_cli in tokens_ativos:
         print(f"Cliente {addr_cli} já está conectado.")
-        s.sendto("200", addr_cli)
+        s.sendto(b"200", addr_cli)
         return 200
-    if len(gamers) >= MAXJGDRS:
+    if len(gamers) >= LIMITE:
         print(f"Máximo de jogadores atingido. Conexão de {addr_cli} recusada.")
-        s.sendto("503", addr_cli)
+        s.sendto(b"503", addr_cli)
         return 503
     if token in tokens_ativos.values():
         print(f"Token/Nome de jogador '{token}' já em uso. Conexão de {addr_cli} recusada.")
-        s.sendto("409", addr_cli)
+        s.sendto(b"409", addr_cli)
         return 409
-    s.sendto("200", addr_cli)
+    s.sendto(b"200", addr_cli)
     print(f"Conexão aceita de {addr_cli} com token {token}.")
     
     gamers[addr_cli] = f"Jogador_{token}"
@@ -74,9 +51,25 @@ def player_out(addr_cli):
         return 200
     else:
         print(f"Cliente {addr_cli} não encontrado entre os jogadores conectados.")
-        return 404
-# def verify_shot(partida):
-    
+        return 404    
+
+def servidor_login():
+    s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s_tcp.bind((HOST, PORT_TCP))
+    s_tcp.listen(5)
+    print(f"Login rodando na porta {PORT_TCP}...")
+    while True:
+        conn, addr = s_tcp.accept()
+        print(f"Conexão de login recebida de {addr}")
+        data = conn.recv(1024).decode('utf-8')
+        if data:
+            status = verify_new_player(addr, data)
+            if status == 200:
+                conn.sendall(b"200")
+        conn.close()
+thread_login = threading.Thread(target=servidor_login, daemon=True)
+thread_login.start()
+
 
 while True: 
     try:
@@ -90,10 +83,25 @@ while True:
                 continue
         if d_traduzido.startswith("DISCONNECT:"):
             player_out(addr_cli)
+            continue
         
-        estado = d_traduzido
-        partida[f'estado{nE}'] = estado
-        nE += 1
+        if "STATE" in d_traduzido:
+            nome, _, estado = d_traduzido.partition("STATE")
+            vida, posx, posy, posz, direcao, atirando, escudo, dano = estado.split(",")
+            gamers[addr_cli]["gamer"] = nome
+            gamers[addr_cli]["estado completo"] = estado
+            gamers[addr_cli]["vida"] = int(vida) - int(dano)
+            gamers[addr_cli]["posicao"] = [float(posx), float(posy), float(posz)]
+            gamers[addr_cli]["direcao"] = float(direcao)
+            gamers[addr_cli]["tiro"] = bool(atirando)
+            gamers[addr_cli]["escudo"] = bool(escudo)
+            for endereco in gamers:
+                if endereco != addr_cli:
+                    s.sendto(gamers[addr_cli].encode('utf-8'), endereco)
+                if bool(atirando) == True:
+                    tx=f"SHOT: {posx}, {posy}, {posz}, {direcao}".encode('utf-8')
+                    s.sendto(tx, addr_cli)
+        
         t.sleep(intervalo)
         continue
     except KeyboardInterrupt:

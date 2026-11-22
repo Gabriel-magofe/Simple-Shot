@@ -29,7 +29,7 @@ CREATE TABLE `dados_cadastro` (
   `pontos` int NOT NULL,
   `vitorias` int NOT NULL,
   `derrotas` int NOT NULL,
-  `killls` int NOT NULL,
+  `kills` int NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
