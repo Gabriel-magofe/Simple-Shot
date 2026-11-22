@@ -83,8 +83,10 @@ class Player : Cubo
     public bool sautCarregando = false;
     public float queda=0f;
     public float saut_carga = 45f;
+    public float vel = 10f;
+    public bool acl = false;
     
-    public Player(Vector3 pos, Vector3 size, int v) : base(pos, size)
+    public Player(Vector3 pos,int v, Vector3? size = null) : base(pos, size ?? new Vector3(1.2f, 2.5f, 1.2f))
     {
         vida = v;
     }
@@ -155,12 +157,12 @@ class Player : Cubo
         float X_antes = onde.X;
         float Z_antes = onde.Z;
 
-        onde += direcao * 22f * dt;
+        onde += direcao * vel * dt;
 
         onde.X = Math.Clamp(onde.X, -319f, 319f);
         foreach (var i in a)
         {
-            if (Distancia(hitbox[0], i.hitbox[0]) > 8f) continue;
+            if (Distancia(hitbox[0], i.hitbox[0]) > 8f || i.tamanho.Y < 1.25f) continue;
 
             if (Raylib.CheckCollisionBoxes(hitbox[1], i.hitbox[0]))
             {
@@ -170,7 +172,7 @@ class Player : Cubo
         onde.Z = Math.Clamp(onde.Z, -319f, 319f);
         foreach (var i in a)
         {
-            if (Distancia(hitbox[0], i.hitbox[0]) > 8f) continue;
+            if (Distancia(hitbox[0], i.hitbox[0]) > 8f || i.tamanho.Y < 1.25f) continue;
 
             if (Raylib.CheckCollisionBoxes(hitbox[1], i.hitbox[0]))
             {
@@ -184,7 +186,7 @@ class Player : Cubo
         if (arm == 1)
         {
 
-            cord_de_ini = onde + (direita * 0.9f) + (frente * 1.7f);
+            cord_de_ini = onde + (direita * 0.9f) + (frente * 0.8f);
 
             float alc = 32.0f;
             cord_de_fim = cord_de_ini + (frente * alc);
@@ -249,7 +251,7 @@ class Player : Cubo
 }
 class SimpleShot
 {
-    static Player jojo = new(new Vector3(0.0f, 60f, 0.0f),new Vector3(1.2f, 2.5f, 1.2f), 3);
+    static Player jojo = new(new Vector3(10.0f, 2f, 10.0f), 3);
 
     static void Main()
     {
@@ -272,6 +274,7 @@ class SimpleShot
 
         List<Cubo> plat = [
             chao, 
+            //centro\torre
             new(new(4f, 7f, 4f),new(7.0f, 1.8f, 7.0f),3),
             new(new(-4f, 14f, 4f),new(7.0f, 1.8f, 7.0f),3),
             new(new(-4f, 21f, -4f),new(7.0f, 1.8f, 7.0f),3),
@@ -279,11 +282,39 @@ class SimpleShot
             new(new(4f, 35f, 4f),new(7.0f, 1.8f, 7.0f),3),
             new(new(-4f, 42f, 4f),new(7.0f, 1.8f, 7.0f),3),
             
-            new(new(23f, 49f, 0f),new(46.0f, 1.8f, 100.0f)),
-            new(new(-31f, 49f, 0f),new(46.0f, 1.8f, 100.0f)),
-            new(new(-4f, 49f, 30f),new(8.0f, 1.8f, 40.0f)),
-            new(new(-4f, 49f, -24.5f),new(8.0f, 1.8f, 51.0f)),
+            new(new(30.25f, 49f, 0f),new(59.5f, 1.8f, 120.0f)),
+            new(new(-34.25f, 49f, 0f),new(51.5f, 1.8f, 120.0f)),
+            new(new(-4f, 49f, 34.25f),new(9.0f, 1.8f, 51.5f)),
+            new(new(-4f, 49f, -30.25f),new(9.0f, 1.8f, 59.5f)),
 
+            new(new(60.5f, 52.9f, 0f), new(1f, 6f, 122f), 2),
+            new(new(-60.5f, 52.9f, 0f), new(1f, 6f, 122f), 2),
+            new(new(0f, 52.9f, 60.5f), new(122f, 6f, 1f), 2),
+            new(new(0f, 52.9f, -60.5f), new(122f, 6f, 1f), 2),
+
+            new(new(-68.0f, 61.7f, 68.0f),new(2.3f, 5.2f, 2.3f),3),
+            new(new(-68.0f, 59f, 68.0f),new(7.0f, 1.8f, 7.0f),3),
+
+            new(new(45f, 51.4f, 27.5f), new(1f, 3.5f, 65f), 2),
+            new(new(30f, 51.4f, -27.5f), new(1f, 3.5f, 65f), 2),
+            new(new(15f, 51.4f, 27.5f), new(1f, 3.5f, 65f), 2),
+            new(new(-15f, 51.4f, -27.5f), new(1f, 3.5f, 65f), 2),
+            new(new(-30f, 51.4f, -27.5f), new(1f, 3.5f, 65f), 2),
+            new(new(-45f, 51.4f, -27.5f), new(1f, 3.5f, 65f), 2),
+
+            new(new(45f, 52.4f, -32.5f), new(6f, 5f, 6.5f), 2),
+            new(new(30f, 52.4f, 32.5f), new(6f, 5f, 6.5f), 2),
+            new(new(15f, 52.4f, -32.5f), new(6f, 5f, 6.5f), 2),
+            new(new(-15f, 52.4f, 32.5f), new(6f, 5f, 6.5f), 2),
+            new(new(-30f, 52.4f, 32.5f), new(6f, 5f, 6.5f), 2),
+            new(new(-45f, 52.4f, 32.5f), new(6f, 5f, 6.5f), 2),
+
+            new(new(-9f,24.4f,0),new(1,47.8f,16.5f)),
+            new(new(9f,24.4f,0),new(1,47.8f,16.5f)),
+            new(new(0f,24.4f,-9),new(16.8f,47.5f,1f)),
+            new(new(0f,28f,9),new(16.8f,41f,1f)),
+
+            //divisores
             new(new(38f,5.2f,0),new(1f, 10.2f,48f),2),
             new(new(-38f,5.2f,0),new(1f, 10.2f,48f),2),
             new(new(0f,5.2f,38f),new(48f, 10.2f,1f),2),
@@ -298,13 +329,28 @@ class SimpleShot
             new(new(0,10.3f,-105f),new(1f,20.4f,135.75f),2),
             new(new(0f,10.3f,-252f),new(1f,20.4f,135.75f),2),
 
-            new(new(160.0f, 2.7f, 160.0f),new(2.3f, 5.2f, 2.3f),3),
-            new(new(160.0f, 1f, 160.0f),new(7.0f, 1.8f, 7.0f),3),
+            // centro - -
+            new(new(-160.0f, 2.7f, -160.0f),new(2.3f, 5.2f, 2.3f),3),
+            new(new(-160.0f, 1f, -160.0f),new(7.0f, 1.8f, 7.0f),3),
 
-            
+            // centro ++
+            new(new(140.0f, 32.7f, 180.0f),new(2.3f, 5.2f, 2.3f),3),
+            new(new(140.0f, 31f, 180.0f),new(7.0f, 1.8f, 7.0f),3),
 
+            new(new(170,4,170),new(1.5f,1.5f,1.5f),2),
+            new(new(165,8.5f,170),new(1.5f,1.5f,1.5f),2),
+            new(new(165,13f,165),new(1.5f,1.5f,1.5f),2),
+            new(new(160,17.5f,164),new(1.5f,1.5f,9.5f),2),
+            new(new(160,22f,150),new(1.5f,1.5f,1.5f),2),
+            new(new(155,26.5f,145),new(9.5f,1.5f,1.5f),2),
+            new(new(140,30.5f,145),new(1.5f,1.5f,1.5f),2),
+            new(new(140,30.5f,151.5f),new(1.5f,1.5f,1.5f),2),
+            new(new(135,30.5f,158),new(1.5f,1.5f,1.5f),2),
+            new(new(140,30.5f,164.5f),new(1.5f,1.5f,1.5f),2),
+            new(new(145,30.5f,171),new(1.5f,1.5f,1.5f),2),
         ];
 
+        // ++
         for (int x = 300; x >= 20; x -= 20)
         {
             for (int z = 300; z >= 20; z -= 20)
@@ -313,12 +359,34 @@ class SimpleShot
                 plat.Add(new(new(x,3.35f,z),new(7f, 6.5f, 7f), 2));
             }
         }
+        
+        // --
+        for (int x = -300; x <= -20; x += 30)
+        {
+            for (int z = -300; z <= -20; z += 30)
+            {
+                if (x>=-180 && z>=-180 && x<=-140 && z<=-140 || x >=-40 && z>=-40) continue;
+                plat.Add(new(new(x,2.7f,z),new(2.3f, 5.2f, 2.3f), 3));
+                plat.Add(new(new(x, 6.1f, z),new(8f, 1.8f, 8f),3));
+            }
+        }
+
+        for (int x = -285; x <= -20; x += 30)
+        {
+            for (int z = -285; z <= -20; z += 30)
+            {
+                if (x>=-180 && z>=-180 && x<=-140 && z<=-140 || x >=-40 && z>=-40) continue;
+                plat.Add(new(new(x, 10.6f, z),new(11f, 1.8f, 11f),3));
+            }
+        }
+
         float time_tiro = 0;
+        var teste = true;
         // float dano = 0;
         Raylib.SetTargetFPS(60);
         while (!Raylib.WindowShouldClose())
         {
-            while (!Raylib.WindowShouldClose() && jojo.vida > 0)
+            while (!Raylib.WindowShouldClose() && jojo.vida > 0 && teste)
             {
                 float dt = Raylib.GetFrameTime();
                 // dano += 1 * dt;
@@ -331,19 +399,27 @@ class SimpleShot
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) jojo.olhando = jojo.olhando + 1 <= Direcao.FrenteE?jojo.olhando + 1:Direcao.Frente;
                 if (Raylib.IsKeyPressed(KeyboardKey.V) && !jojo.atirando && jojo.munição >= 1) { jojo.atirando = true; jojo.munição -= 1;jojo.ataque(plat);}
                 
-                if (Raylib.IsKeyDown(KeyboardKey.W)) jojo.mover(dt, 0,plat);
-                if (Raylib.IsKeyDown(KeyboardKey.S)) jojo.mover(dt, 1, plat);
-                if (Raylib.IsKeyDown(KeyboardKey.A)) jojo.mover(dt, 2,plat);
-                if (Raylib.IsKeyDown(KeyboardKey.D)) jojo.mover(dt, 3,plat);
+                if (Raylib.IsKeyDown(KeyboardKey.W)) {jojo.mover(dt, 0,plat); jojo.acl = true;}
+                if (Raylib.IsKeyDown(KeyboardKey.S)) {jojo.mover(dt, 1, plat); jojo.acl = true;}
+                if (Raylib.IsKeyDown(KeyboardKey.A)) {jojo.mover(dt, 2,plat); jojo.acl = true;}
+                if (Raylib.IsKeyDown(KeyboardKey.D)) {jojo.mover(dt, 3,plat); jojo.acl = true;}
                 if (Raylib.IsKeyDown(KeyboardKey.Up) && !jojo.pulando)
                 {
                     jojo.sautCarregando = true;
                     jojo.saut_carga += 20f*dt;
-                    if (jojo.saut_carga > 60f) jojo.saut_carga = 60f;
+                    if (jojo.saut_carga > 66f) jojo.saut_carga = 66f;
                     
                 }
                 else if (Raylib.IsKeyReleased(KeyboardKey.Up)) {jojo.pulando = true; jojo.sautCarregando = false;}
                 if (jojo.pulando) {jojo.Pulo(dt); jojo.ai_minha_cabeca(plat);}
+
+                if (jojo.acl)
+                {
+                    jojo.acl = false;
+                    jojo.vel += 4.5f * dt;
+                    if (jojo.vel > 26.5f) jojo.vel = 26.5f;
+                    
+                } else jojo.vel = 10f;
 
                 joOffset = jojo.olhando switch
                 {
@@ -396,8 +472,7 @@ class SimpleShot
                 {
                     time_tiro += dt;
                     Raylib.DrawLine3D(jojo.cord_de_ini,jojo.cord_de_fim,Color.Orange);
-                    Raylib.DrawSphere(jojo.cord_de_fim,0.08f,Color.Orange);
-                    Raylib.DrawSphereWires(jojo.cord_de_fim,0.1f,4,4,Color.Yellow);
+                    Raylib.DrawSphere(jojo.cord_de_fim,0.09f,Color.Orange);
                     if (time_tiro > 0.25f) {jojo.atirando = false;time_tiro=0;}
                 }
 
@@ -435,7 +510,7 @@ class SimpleShot
     }
     public static void Reset()
     {
-        jojo = new(new Vector3(0.0f, 30f, 0.0f), new Vector3(1.2f, 2.5f, 1.2f), 3)
+        jojo = new(new Vector3(0.0f, 30f, 0.0f), 3)
         {
             olhando = Direcao.Frente
         };
