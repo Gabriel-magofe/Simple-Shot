@@ -92,7 +92,6 @@ class TesteServidor:
             "200",
             "desconexão autorizada"
         )
-        cliente.close()
         self.jogadores = [
             jogador for jogador in self.jogadores
             if jogador[0] is not cliente
@@ -191,6 +190,7 @@ class TesteServidor:
             "jogador desconectado não pode continuar enviando"
         )
         self.sem_mensagem(jogador_dois, "mensagem de jogador desconectado não é retransmitida")
+        jogador_um.close()
 
         token_reutilizado = self.novo_udp()
         self.enviar_e_esperar(
@@ -202,6 +202,7 @@ class TesteServidor:
         token_reutilizado.close()
 
         self.desconectar(jogador_dois, resposta)
+        jogador_dois.close()
 
     def testar_limite(self, nome, senha, limite):
         for indice in range(limite):
@@ -213,6 +214,17 @@ class TesteServidor:
         self.verificar(
             len(self.jogadores) == limite,
             f"servidor aceita {limite} jogadores e recusa o próximo"
+        )
+        cliente, token = self.jogadores[0]
+        self.desconectar(cliente, token)
+        cliente.close()
+
+        cliente_extra = self.conectar_jogador(token_extra)
+        self.desconectar(cliente_extra, token_extra)
+        cliente_extra.close()
+        self.verificar(
+            len(self.jogadores) == limite - 1,
+            "vaga liberada pode ser ocupada e o token pendente é consumido"
         )
 
     def executar(self, nome, senha, limite):
