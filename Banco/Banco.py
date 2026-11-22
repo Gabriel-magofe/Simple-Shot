@@ -1,6 +1,34 @@
 import mysql.connector 
 from mysql.connector import Error
 
+# pode excluir essa função se for fazer uma pra isso, só coloquei aqui pra não dar erro 
+# no servidor, mas se quiser pode excluir e fazer uma nova, 
+# só não esquece de importar ela no servidor
+def verificar_login(nome, senha):
+    conexao = None
+    cursor = None
+    try:
+        conexao = mysql.connector.connect(
+            host='localhost',
+            database='jogo_tiro_db',
+            user='root',
+            password=''
+        )
+        cursor = conexao.cursor()
+        cursor.execute(
+            "SELECT id FROM dados_cadastro WHERE nome = %s AND senha = %s",
+            (nome, senha)
+        )
+        return cursor.fetchone() is not None
+    except Error as e:
+        print(f" Erro ao verificar login no banco de dados: {e}")
+        raise
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+
 def cadastrar_usuario(nome, senha, pontos):
     try:
         

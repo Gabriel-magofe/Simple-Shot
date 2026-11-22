@@ -1,9 +1,9 @@
 import os
 import sys
 import socket
-import math
-import time as t
+import secrets
 import threading
+from mysql.connector import Error
 PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(PATH))
 from Banco import Banco
@@ -16,41 +16,46 @@ s.bind((HOST, PORT_UDP))
 print(f"Rodando na porta {PORT_UDP}...")  
      
 gamers = {}
-partida = {}
 tokens_ativos = {}
-intervalo = 0.05
+tokens_pendentes = {}
+tokens_lock = threading.Lock()
 LIMITE= 50
 
-def verify_new_player(addr_cli, d_traduzido):
-    token = d_traduzido.removeprefix("CONNECT:")
+def verify_new_player(addr_cli, token):
     if addr_cli in tokens_ativos:
         print(f"Cliente {addr_cli} já está conectado.")
-        s.sendto(b"200", addr_cli)
-        return 200
+        status = 200 if tokens_ativos[addr_cli] == token else 401
+        s.sendto(str(status).encode('utf-8'), addr_cli)
+        return status
     if len(gamers) >= LIMITE:
         print(f"Máximo de jogadores atingido. Conexão de {addr_cli} recusada.")
         s.sendto(b"503", addr_cli)
         return 503
-    if token in tokens_ativos.values():
-        print(f"Token/Nome de jogador '{token}' já em uso. Conexão de {addr_cli} recusada.")
-        s.sendto(b"409", addr_cli)
-        return 409
+    with tokens_lock:
+        nome = tokens_pendentes.pop(token, None)
+        if nome is None:
+            s.sendto(b"401", addr_cli)
+            return 401
+
+        gamers[addr_cli] = nome
+        tokens_ativos[addr_cli] = token
     s.sendto(b"200", addr_cli)
-    print(f"Conexão aceita de {addr_cli} com token {token}.")
-    
-    gamers[addr_cli] = f"Jogador_{token}"
-    tokens_ativos[addr_cli] = token
-    Banco.cadastrar_usuario(token)
+    print(f"Conexão aceita de {addr_cli} com jogador {nome}.")
     return 200
 
-def player_out(addr_cli):
+def player_out(addr_cli, token):
     if addr_cli in gamers:
+        if tokens_ativos.get(addr_cli) != token:
+            s.sendto(b"401", addr_cli)
+            return 401
         print(f"Jogador {gamers[addr_cli]} desconectado.")
         del gamers[addr_cli]
         del tokens_ativos[addr_cli]
+        s.sendto(b"200", addr_cli)
         return 200
     else:
         print(f"Cliente {addr_cli} não encontrado entre os jogadores conectados.")
+        s.sendto(b"404", addr_cli)
         return 404    
 
 def servidor_login():
@@ -61,12 +66,26 @@ def servidor_login():
     while True:
         conn, addr = s_tcp.accept()
         print(f"Conexão de login recebida de {addr}")
-        data = conn.recv(1024).decode('utf-8')
-        if data:
-            status = verify_new_player(addr, data)
-            if status == 200:
-                conn.sendall(b"200")
-        conn.close()
+        with conn:
+            data = conn.recv(1024).decode('utf-8').strip()
+            comando, separador, credenciais = data.partition(":")
+            nome, separador_nome, senha = credenciais.partition(":")
+            if comando != "LOGIN" or not separador or not separador_nome or not nome or not senha:
+                conn.sendall(b"LOGIN_INVALIDO")
+                continue
+            try:
+                login_valido = Banco.verificar_login(nome, senha)
+            except Error as e:
+                print(f"Erro ao verificar login: {e}")
+                conn.sendall(b"LOGIN_ERRO")
+                continue
+            if not login_valido:
+                conn.sendall(b"LOGIN_NEGADO")
+                continue
+            token = secrets.token_urlsafe(24)
+            with tokens_lock:
+                tokens_pendentes[token] = nome
+            conn.sendall(f"LOGIN_OK:{token}".encode('utf-8'))
 thread_login = threading.Thread(target=servidor_login, daemon=True)
 thread_login.start()
 
@@ -78,32 +97,25 @@ while True:
         d_traduzido = dados.decode('utf-8')
         
         if d_traduzido.startswith("CONNECT:"):
-            status = verify_new_player(addr_cli, d_traduzido)
-            if status != 200:
-                continue
-        if d_traduzido.startswith("DISCONNECT:"):
-            player_out(addr_cli)
+            verify_new_player(addr_cli, d_traduzido.removeprefix("CONNECT:"))
             continue
-        
-        if "STATE" in d_traduzido:
-            nome, _, estado = d_traduzido.partition("STATE")
-            vida, posx, posy, posz, direcao, atirando, escudo, dano = estado.split(",")
-            gamers[addr_cli]["gamer"] = nome
-            gamers[addr_cli]["estado completo"] = estado
-            gamers[addr_cli]["vida"] = int(vida) - int(dano)
-            gamers[addr_cli]["posicao"] = [float(posx), float(posy), float(posz)]
-            gamers[addr_cli]["direcao"] = float(direcao)
-            gamers[addr_cli]["tiro"] = bool(atirando)
-            gamers[addr_cli]["escudo"] = bool(escudo)
-            for endereco in gamers:
-                if endereco != addr_cli:
-                    s.sendto(gamers[addr_cli].encode('utf-8'), endereco)
-                if bool(atirando) == True:
-                    tx=f"SHOT: {posx}, {posy}, {posz}, {direcao}".encode('utf-8')
-                    s.sendto(tx, addr_cli)
-        
-        t.sleep(intervalo)
-        continue
+        if d_traduzido.startswith("DISCONNECT:"):
+            player_out(addr_cli, d_traduzido.removeprefix("DISCONNECT:"))
+            continue
+
+        if addr_cli not in gamers:
+            s.sendto(b"401", addr_cli)
+            continue
+
+        tipo, separador, conteudo = d_traduzido.partition(":")
+        if tipo not in ("STATE", "SHOT", "HIT", "KILL") or not separador:
+            s.sendto(b"400", addr_cli)
+            continue
+
+        mensagem = f"{tipo}:{gamers[addr_cli]}:{conteudo}".encode('utf-8')
+        for endereco in gamers:
+            if endereco != addr_cli:
+                s.sendto(mensagem, endereco)
     except KeyboardInterrupt:
         print("\nDesligando...")
         break
