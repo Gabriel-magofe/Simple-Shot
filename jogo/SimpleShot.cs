@@ -60,7 +60,7 @@ class Cubo(Vector3 a, Vector3 b, int tipo=1)
 }
 class Player : Cubo
 {
-    public override BoundingBox[] hitbox => [new(onde - (tamanho /2), onde + (tamanho / 2)), new(new Vector3(onde.X,onde.Y+0.07f,onde.Z) - (tamanho /2), onde + (tamanho / 2))];
+    public override BoundingBox[] hitbox => [new(onde - (tamanho /2), onde + (tamanho / 2)), new(new Vector3(onde.X,onde.Y+0.07f,onde.Z) - (tamanho /2), onde + (tamanho / 2)),new(new Vector3(onde.X,onde.Y-0.075f,onde.Z) - (tamanho /2), onde + (tamanho / 2))];
     public Direcao olhando = Direcao.Frente;
     Vector3 frente => olhando switch
     {
@@ -87,8 +87,9 @@ class Player : Cubo
     public float shield= 3;
     public int vida;
     public bool pulando = false;
-    public bool sautCarregando = false;
+    public bool saut_carregando = false;
     public float queda=0f;
+    public bool pisando = false;
     public float saut_carga = 45f;
     public float vel = 10f;
     public bool acl = false;
@@ -103,25 +104,28 @@ class Player : Cubo
     }
     public void cair(float dt)
     {
+        if (pisando && !pulando) {queda=0f;return;}
         queda += 190f*dt;
         // if (queda > 12f*dt) queda = 12f*dt; 
         onde.Y -= queda*dt;
         if (onde.Y < -2f) {queda=0;onde.Y=10f;}
     }
-    public void nochao(List<Cubo> a)
+    public void pisar(List<Cubo> a)
     {
+        pisando = false;
         foreach (var i in a)
         {
             if (Distancia(hitbox[0], i.hitbox[0]) > 0f) continue;
             
-            if (Raylib.CheckCollisionBoxes(hitbox[0],i.hitbox[0]))
+            if (Raylib.CheckCollisionBoxes(hitbox[2],i.hitbox[0]))
             {
                 if (onde.Y  > i.onde.Y)
                 {
                     if (!pulando) onde.Y = i.hitbox[0].Max.Y + (tamanho.Y / 2.0f);
                     queda = 0f;
                     pulando = false;
-                    if (!sautCarregando) saut_carga =45f;
+                    pisando=true;
+                    if (!saut_carregando) saut_carga =45f;
                 }
                 
             }
@@ -451,7 +455,7 @@ class SimpleShot
                 // dano += 1 * dt;
                 // if (dano> 1){jojo.vida -= 1;dano = 0;}
                 jojo.cair(dt);
-                jojo.nochao(plat);
+                jojo.pisar(plat);
                 
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) jojo.olhando = jojo.olhando - 1 >= 0?jojo.olhando - 1:Direcao.FrenteE;
@@ -465,12 +469,12 @@ class SimpleShot
                 if (Raylib.IsKeyDown(KeyboardKey.D)) {jojo.mover(dt, 3,plat); jojo.acl = true;}
                 if (Raylib.IsKeyDown(KeyboardKey.Up) && !jojo.pulando)
                 {
-                    jojo.sautCarregando = true;
+                    jojo.saut_carregando = true;
                     jojo.saut_carga += 20f*dt;
                     if (jojo.saut_carga > 66f) jojo.saut_carga = 66f;
                     
                 }
-                else if (Raylib.IsKeyReleased(KeyboardKey.Up)) {jojo.pulando = true; jojo.sautCarregando = false;}
+                else if (Raylib.IsKeyReleased(KeyboardKey.Up) && jojo.saut_carregando) {jojo.pulando = true; jojo.saut_carregando = false;}
                 if (jojo.pulando) {jojo.Pulo(dt); jojo.ai_minha_cabeca(plat);}
 
                 if (jojo.acl)
@@ -510,9 +514,6 @@ class SimpleShot
 
                 camera.Target = jojo.onde + joOffset;
                 
-                camera.Position = jojo.onde + cameraOffset;
-
-                camera.Target = jojo.onde + joOffset;
                 camera.Position = jojo.onde + cameraOffset;
 
                 Vector3 origemCam = jojo.onde + new Vector3(0f, 0.8f, 0f);
@@ -578,7 +579,7 @@ class SimpleShot
 
                 foreach (var i in plat)
                 {
-                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0])> 35f || i.tipo != 4) continue;
+                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0])> 31f || i.tipo != 4) continue;
                     i.aparecer();
                 }
 
