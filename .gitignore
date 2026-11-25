@@ -1,5 +1,6 @@
 venv
 .env
+teste.py
 __pycache__/
 jogo/bin/
 jogo/obj/

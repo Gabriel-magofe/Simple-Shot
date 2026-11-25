@@ -34,7 +34,12 @@ class Cubo(Vector3 a, Vector3 b, int tipo=1)
 
     public virtual void aparecer()
     {
-        Raylib.DrawCubeV(onde, tamanho, tipo==1?Color.Gray:tipo==2?new(105,100,83,255):new(170,170,170,255));
+        Raylib.DrawCubeV
+        (
+            onde, 
+            tamanho, 
+            tipo==1?Color.Gray:tipo==2?new(105,100,83,255):tipo==3?new(170,170,170,255):new(39,41,48,225)
+        );
         Raylib.DrawCubeWiresV(onde, tamanho, Color.Black);
     }
     public static float Distancia(BoundingBox a, BoundingBox b)
@@ -78,6 +83,8 @@ class Player : Cubo
     public bool atirando = false;
     public float munição = 3;
     public float golpear = 1;
+    public bool act_shield = false;
+    public float shield= 3;
     public int vida;
     public bool pulando = false;
     public bool sautCarregando = false;
@@ -244,9 +251,17 @@ class Player : Cubo
 
             Rlgl.PopMatrix();
         }
-                        
-        Raylib.DrawCapsule(start,end,radius,16,8, new Color(190,190,190,120));
-        Raylib.DrawCapsuleWires(start,end,radius,8,8,Color.DarkGray);
+        if (act_shield)
+        {
+            Raylib.DrawCapsule(start,end,radius,16,8, new Color(150,210,230,120));
+            Raylib.DrawCapsuleWires(start,end,radius,8,8,Color.DarkBlue);
+        }
+        else
+        {
+            Raylib.DrawCapsule(start,end,radius,16,8, new Color(190,190,190,120));
+            Raylib.DrawCapsuleWires(start,end,radius,8,8,Color.DarkGray);
+        }          
+        
     }
 }
 class SimpleShot
@@ -348,6 +363,16 @@ class SimpleShot
             new(new(135,30.5f,158),new(1.5f,1.5f,1.5f),2),
             new(new(140,30.5f,164.5f),new(1.5f,1.5f,1.5f),2),
             new(new(145,30.5f,171),new(1.5f,1.5f,1.5f),2),
+
+            // centro -+
+            new(new(-160.0f, 2.7f, 160.0f),new(2.3f, 5.2f, 2.3f),3),
+            new(new(-160.0f, 1f, 160.0f),new(7.0f, 1.8f, 7.0f),3),
+
+            new(new(-160f, 15.65f, 248.75f),new(35f, 1.8f, 142.5f),4),
+            new(new(-160f, 15.65f, 71.25f),new(35f, 1.8f, 142.5f),4),
+            new(new(-90.25f, 15.65f, 19f),new(104.5f, 1.8f, 38f),4),
+            new(new(-248.75f, 15.65f, 160f),new(142.5f, 1.8f, 320f),4),
+            new(new(-71.25f, 15.65f, 179f),new(142.5f, 1.8f, 282f),4),
         ];
 
         // ++
@@ -370,13 +395,47 @@ class SimpleShot
                 plat.Add(new(new(x, 6.1f, z),new(8f, 1.8f, 8f),3));
             }
         }
-
         for (int x = -285; x <= -20; x += 30)
         {
             for (int z = -285; z <= -20; z += 30)
             {
                 if (x>=-180 && z>=-180 && x<=-140 && z<=-140 || x >=-40 && z>=-40) continue;
                 plat.Add(new(new(x, 10.6f, z),new(11f, 1.8f, 11f),3));
+            }
+        }
+
+        // - +
+        for (float x = -317.5f; x <= -2.5f; x += 35f)
+        {
+            for (float z = 317.5f; z >= 2.5f; z -= 35f)
+            {
+                if (x >= -40f && z <= 40f) continue;
+                if (x==-177.5 && z==2.5 || z==177.5 && x ==-2.5 ) continue;
+
+                if (x == -2.5)
+                {
+                    plat.Add(new(new(x, 5.35f, z), new(28f, 10.5f, 1f), 2));
+                    plat.Add(new(new(x, 7.6f, z), new(1f, 15f, 28f), 2));
+                    continue;
+                }
+                if (z == 2.5)
+                {
+                    plat.Add(new(new(x, 7.6f, z), new(28f, 15f, 1f), 2));
+                    plat.Add(new(new(x, 5.35f, z), new(1f, 10.5f, 28f), 2));
+                    continue;
+                }
+
+                plat.Add(new(new(x, 7.6f, z), new(28f, 15.4f, 1f), 2));
+                plat.Add(new(new(x, 7.6f, z), new(1f, 15.4f, 28f), 2));
+            }
+        }
+        for (int x = -300; x <= -20; x += 35)
+        {
+            for (int z = 300; z >= 20; z -= 35)
+            {
+                // if (x>=-180 && z<=180 && x<=-140 && z>=140 || x >=-40 && z<=40) continue;
+                if (x >=-40 && z<=40 || x==-160 && z==160) continue;
+                plat.Add(new(new(x,7.6f,z),new(1.3f, 15.4f, 1.3f), 4));
             }
         }
 
@@ -397,7 +456,8 @@ class SimpleShot
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) jojo.olhando = jojo.olhando - 1 >= 0?jojo.olhando - 1:Direcao.FrenteE;
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) jojo.olhando = jojo.olhando + 1 <= Direcao.FrenteE?jojo.olhando + 1:Direcao.Frente;
-                if (Raylib.IsKeyPressed(KeyboardKey.V) && !jojo.atirando && jojo.munição >= 1) { jojo.atirando = true; jojo.munição -= 1;jojo.ataque(plat);}
+                if (Raylib.IsKeyPressed(KeyboardKey.Space) && !jojo.atirando && jojo.munição >= 1) { jojo.atirando = true; jojo.munição -= 1;jojo.ataque(plat);}
+                if (Raylib.IsKeyPressed(KeyboardKey.V) && !jojo.act_shield && jojo.shield >= 3) jojo.act_shield = true;
                 
                 if (Raylib.IsKeyDown(KeyboardKey.W)) {jojo.mover(dt, 0,plat); jojo.acl = true;}
                 if (Raylib.IsKeyDown(KeyboardKey.S)) {jojo.mover(dt, 1, plat); jojo.acl = true;}
@@ -452,11 +512,47 @@ class SimpleShot
                 
                 camera.Position = jojo.onde + cameraOffset;
 
+                camera.Target = jojo.onde + joOffset;
+                camera.Position = jojo.onde + cameraOffset;
+
+                Vector3 origemCam = jojo.onde + new Vector3(0f, 0.8f, 0f);
+                Vector3 vetorCam = camera.Position - origemCam;
+                float distCam = vetorCam.Length();
+                Vector3 dirCam = Vector3.Normalize(vetorCam);
+
+                Ray rayCamera = new(origemCam, dirCam);
+
+                foreach (var i in plat)
+                {
+                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0]) > 15f) continue;
+
+                    RayCollision colisao_cam = Raylib.GetRayCollisionBox(rayCamera, i.hitbox[0]);
+                    if (colisao_cam.Hit && colisao_cam.Distance < distCam)
+                    {
+                        distCam = colisao_cam.Distance;
+                        camera.Position = colisao_cam.Point - (dirCam * 0.4f);
+                    }
+                }
+
                 // Raylib.UpdateCamera(ref camera, CameraMode.Orbital);
 
                 if (jojo.munição < 3) jojo.munição += jojo.munição>= 1?0.85f * dt:0.48f * dt;
 
                 if (jojo.onde.Y < -40) jojo.vida -= 1;
+
+                if (jojo.act_shield)
+                {
+                    jojo.shield -= 1.5f*dt;
+                    if (jojo.shield <= 0)
+                    {
+                        jojo.shield = 0;
+                        jojo.act_shield = false;
+                    }
+                } else if (jojo.shield <= 3)
+                {
+                    jojo.shield += 0.45f*dt;
+                    if (jojo.shield >= 3) jojo.shield = 3;
+                }
 
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(new Color(48, 50, 164,255));
@@ -464,7 +560,7 @@ class SimpleShot
 
                 foreach (var i in plat)
                 {
-                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0])> 35f) continue;
+                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0])> 35f || i.tipo == 4) continue;
                     i.aparecer();
                 }
 
@@ -478,7 +574,13 @@ class SimpleShot
 
                 Raylib.DrawSphere(jojo.onde, -33.0f, new Color(48, 50, 164,255)); 
                 Raylib.DrawSphere(jojo.onde, -30.0f, new Color(48, 50, 164, 160)); 
-                Raylib.DrawSphere(jojo.onde, -26.0f, new Color(48, 50, 164, 80));  
+                Raylib.DrawSphere(jojo.onde, -26.0f, new Color(48, 50, 164, 80));
+
+                foreach (var i in plat)
+                {
+                    if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0])> 35f || i.tipo != 4) continue;
+                    i.aparecer();
+                }
 
                 jojo.aparecer();
 
@@ -486,7 +588,10 @@ class SimpleShot
                 
                 Raylib.DrawRectangleV(new Vector2(848, 58 ),new Vector2(24, 94), Color.Black);
                 Raylib.DrawRectangleV(new Vector2(850, 60 + (30*3 - 30*jojo.vida)>=60?60 + (30*3 - 30*jojo.vida):60),new Vector2(20, 30*jojo.vida<=90?30*jojo.vida:90f), jojo.vida>1 ? Color.Lime: Color.Red);
-                // Raylib.DrawText($"vida ", 10, 10, 20, Color.DarkGray);
+                
+                Raylib.DrawRectangleV(new Vector2(48, 58 ),new Vector2(24, 94), Color.Black);
+                Raylib.DrawRectangleV(new Vector2(50, 60 + (30*3 - 30*jojo.shield)>=60?60 + (30*3 - 30*jojo.shield):60),new Vector2(20, 30*jojo.shield<=90?30*jojo.shield:90f), jojo.act_shield? new(193,249,255): new(126,236,255));
+                Raylib.DrawText($"Shield", 32, 155, 20, Color.DarkGray);
 
                 Raylib.DrawText($"X: {(int)jojo.onde.X};Y: {(int)jojo.onde.Y};Z: {(int)jojo.onde.Z}", 10, 10, 20, Color.DarkGray);
                 Raylib.DrawText($"tiros: {(int)jojo.munição}/3", 10, 30, 20, Color.DarkGray);
