@@ -73,7 +73,7 @@ def verificar_login(nome, senha):
     senha_digitada = senha.encode('utf-8')
     
     if bcrypt.checkpw(senha_digitada, senha_armazenada):
-        print(f"Login bem-sucedido! Bem-vindo de volta, {nome}!")
+        print(f"Login bem_sucedido! Bem-vindo de volta, {nome}!")
         return True
     else:
         print("Senha incorreta!")
