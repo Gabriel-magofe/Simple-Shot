@@ -443,6 +443,12 @@ class SimpleShot
             }
         }
 
+        // + -
+        for (var x = 347; x > 38; x-=29)
+        {
+            plat.Add(new(new(x,1.85f,-160),new(26,3.5f,310),1));
+        }
+
         float time_tiro = 0;
         var teste = true;
         // float dano = 0;
