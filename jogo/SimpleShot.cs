@@ -42,6 +42,12 @@ class Player : Cubo
 {
     public Direcao olhando = Direcao.Frente;
     public int arm = 1;
+    public Vector3 cord_de_ini;
+    public Vector3 cord_de_fim;
+
+    public bool atirando = false;
+    public float munição = 3;
+    public float golpear = 1;
     public int vida;
     public bool pulando = false;
     public bool sautCarregando = false;
@@ -91,6 +97,32 @@ class Player : Cubo
 
         onde += direcao * 10f * dt;
     }
+    public void ataque()
+    {
+        if (arm == 1)
+        {
+            float angulo = olhando switch
+            {
+                Direcao.Frente  => 0f,
+                Direcao.FrenteD => 315f,
+                Direcao.Direita => 270f,
+                Direcao.TrasD   => 225f,
+                Direcao.Tras    => 180f,
+                Direcao.TrasE   => 135f,
+                Direcao.Esquerda=> 90f,
+                Direcao.FrenteE => 45f,
+                _ => 0f
+            };
+            float rad = angulo * (MathF.PI / 180.0f);
+
+            Vector3 offsetRotacionado = Vector3.Transform(new Vector3(0.9f, 0f, -0.8f), Matrix4x4.CreateRotationY(rad));
+            cord_de_ini = onde + offsetRotacionado;
+
+            Vector3 dir = new Vector3(-MathF.Sin(rad), 0.0f, -MathF.Cos(rad));
+            cord_de_fim = cord_de_ini + (dir * 32.0f);
+        }
+        
+    }
     public override void aparecer()
     {
         float halfWidth = tamanho.X / 2.0f;
@@ -129,7 +161,7 @@ class Player : Cubo
             Rlgl.PopMatrix();
         }
                         
-        Raylib.DrawCapsule(start,end,radius,16,8, new Color(190,190,190,125));
+        Raylib.DrawCapsule(start,end,radius,16,8, new Color(190,190,190,120));
         Raylib.DrawCapsuleWires(start,end,radius,8,8,Color.DarkGray);
     }
 }
@@ -145,7 +177,7 @@ class SimpleShot
         Camera3D camera = new()
         {
             Up = new Vector3(0.0f, 1.0f, 0.0f),
-            
+            // Position = jojo.onde + new Vector3(0f, 16f, 10f),
             Target = new Vector3(0.0f, 0.0f, 0.0f),
             Projection = CameraProjection.Perspective,
             FovY = 50.0f
@@ -175,7 +207,8 @@ class SimpleShot
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) jojo.olhando = jojo.olhando - 1 >= 0?jojo.olhando - 1:Direcao.FrenteE;
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) jojo.olhando = jojo.olhando + 1 <= Direcao.FrenteE?jojo.olhando + 1:Direcao.Frente;
-
+                if (Raylib.IsKeyPressed(KeyboardKey.V) && !jojo.atirando && jojo.munição > 0) { jojo.atirando = true; jojo.munição -= 1;}
+                
                 if (Raylib.IsKeyDown(KeyboardKey.W)) jojo.mover(dt, 0);
                 if (Raylib.IsKeyDown(KeyboardKey.S)) jojo.mover(dt, 1);
                 if (Raylib.IsKeyDown(KeyboardKey.A)) jojo.mover(dt, 2);
@@ -203,6 +236,7 @@ class SimpleShot
                     _ => new(0f, 0f, -7.0f)
                 };
 
+                // cameraOffset = new(0f, 16f, 10f);
                 cameraOffset = jojo.olhando switch
                 {
                     Direcao.Frente => new(0f, 3f, 6f),
@@ -230,11 +264,21 @@ class SimpleShot
 
                 chao.aparecer();
 
+                if (jojo.atirando)
+                {
+                    jojo.ataque();
+                    Raylib.DrawLine3D(jojo.cord_de_ini,jojo.cord_de_fim,Color.Orange);
+                    jojo.atirando = false;
+                }
+                
                 jojo.aparecer();
 
                 Raylib.EndMode3D();
+                
                 Raylib.DrawRectangleV(new Vector2(848, 58 ),new Vector2(24, 94), Color.Black);
-                Raylib.DrawRectangleV(new Vector2(850, 60 + (30*3 - 30*jojo.vida)),new Vector2(20, 30*jojo.vida), jojo.vida>1 ? Color.Lime: Color.Red);
+                Raylib.DrawRectangleV(new Vector2(850, 60 + (30*3 - 30*jojo.vida)<=60?60 + (30*3 - 30*jojo.vida):60),new Vector2(20, 30*jojo.vida), jojo.vida>1 ? Color.Lime: Color.Red);
+                // Raylib.DrawText($"vida ", 10, 10, 20, Color.DarkGray);
+
                 Raylib.DrawText($"X: {(int)jojo.onde.X};Y: {(int)jojo.onde.Y};Z: {(int)jojo.onde.Z}", 10, 10, 20, Color.DarkGray);
                 // Raylib.DrawText($"X: {jojo.olhando}", 10, 10, 20, Color.DarkGray);
 
