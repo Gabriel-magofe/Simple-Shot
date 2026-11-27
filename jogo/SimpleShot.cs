@@ -132,7 +132,7 @@ class Player : Cubo
         }
 
     }
-    public void ai_minha_cabeca(List<Cubo> a)
+    public void aiMinhaCabeca(List<Cubo> a)
     {
         
         if (!pulando || (saut_carga <= queda)) return;
@@ -190,8 +190,7 @@ class Player : Cubo
                 onde.Z = Z_antes;
             }
         }
-    }
-    
+    }   
     public void ataque(List<Cubo> a)
     {
         if (arm == 1)
@@ -220,13 +219,10 @@ class Player : Cubo
     }
     public override void aparecer()
     {
-        float halfWidth = tamanho.X / 2.0f;
-        float halfDepth = tamanho.Z / 2.0f;
-        float halfHeight = tamanho.Y / 2.0f;
-        float radius = MathF.Sqrt(halfWidth * halfWidth + halfDepth * halfDepth);
+        float radius = MathF.Sqrt(tamanho.X / 2.0f * (tamanho.X / 2.0f) + tamanho.Z / 2.0f * (tamanho.Z / 2.0f));
 
-        Vector3 start = new Vector3(onde.X, onde.Y - halfHeight, onde.Z);
-        Vector3 end = new Vector3(onde.X, onde.Y + halfHeight, onde.Z);
+        Vector3 start = new Vector3(onde.X, onde.Y - (tamanho.Y / 2.0f), onde.Z);
+        Vector3 end = new Vector3(onde.X, onde.Y + (tamanho.Y / 2.0f), onde.Z);
 
         
         if (arm == 1)
@@ -268,6 +264,85 @@ class Player : Cubo
         
     }
 }
+public record struct Botao(Vector2 pos, Vector2 size, Color cor, string text)
+{
+    public void Desenhar()
+    {
+        Raylib.DrawRectangleV(pos, size, cor);
+        Raylib.DrawRectangleLinesEx(new(pos.X,pos.Y,size.X,size.Y),3f,Color.Black);
+
+        int font_size = (int)(size.Y * 0.5f);
+
+        while (Raylib.MeasureText(text, font_size) > size.X - 20 && font_size > 10)
+        {
+            font_size--;
+        }
+
+        int textX = (int)(pos.X + (size.X - Raylib.MeasureText(text, font_size)) / 2f);
+        int textY = (int)(pos.Y + (size.Y - font_size) / 2f);
+
+        Raylib.DrawText(text, textX, textY, font_size, Color.Black);
+    }
+}
+public record struct TextBox(Vector2 pos)
+{
+    public Rectangle area = new(pos.X, pos.Y, 350, 50);
+    public string text = "";
+    int frame = 0;
+    public bool apertado = false;
+    public void Aparecer()
+    {
+        Raylib.DrawRectangleRec(area,Color.LightGray);
+        Raylib.DrawRectangleLinesEx(area, 3, apertado? Color.Red : Color.DarkGray);
+
+        int font_size = (int)(50 * 0.5f);
+
+        while (Raylib.MeasureText(text, font_size) > 350 - 20 && font_size > 10)
+        {
+            font_size--;
+        }
+
+        int textX = (int)(area.X + (area.Width - Raylib.MeasureText(text, font_size)) / 2f);
+        int textY = (int)(area.Y + (area.Height - font_size) / 2f);
+
+        Raylib.DrawText(text, textX, textY, font_size, Color.Black);
+        if (apertado && (text.Length < 20) && (frame / 20 % 2 == 0))
+        {
+            Raylib.DrawText("_", textX + Raylib.MeasureText(text, font_size) + 2, textY, font_size, Color.Maroon);
+        }
+
+    }
+    public void Receba()
+    {
+        if (apertado)
+        {
+            Raylib.SetMouseCursor(MouseCursor.IBeam);
+
+            int key = Raylib.GetCharPressed();
+
+            while (key > 0)
+            {
+                if ((key >= 32) && (key <= 125) && (text.Length < 20))
+                {
+                    text += (char)key;
+                }
+                key = Raylib.GetCharPressed();
+            }
+
+            if (Raylib.IsKeyPressed(KeyboardKey.Backspace) && text.Length > 0)
+            {
+                text = text.Substring(0, text.Length - 1);
+            }
+
+            frame++;
+        }
+        else
+        {
+            Raylib.SetMouseCursor(MouseCursor.Default);
+            frame = 0;
+        }
+    }
+}
 class SimpleShot
 {
     static Player jojo = new(new Vector3(10.0f, 2f, 10.0f), 3);
@@ -286,8 +361,8 @@ class SimpleShot
             FovY = 50.0f
         };
 
-        Vector3 cameraOffset;
-        Vector3 joOffset;
+        Vector3 camera_offset;
+        Vector3 jo_offset;
         
         Cubo chao = new(new(0.0f, 0.0f, 0.0f),new(640.0f, 0.2f, 640.0f),1);
 
@@ -377,6 +452,9 @@ class SimpleShot
             new(new(-90.25f, 15.65f, 19f),new(104.5f, 1.8f, 38f),4),
             new(new(-248.75f, 15.65f, 160f),new(142.5f, 1.8f, 320f),4),
             new(new(-71.25f, 15.65f, 179f),new(142.5f, 1.8f, 282f),4),
+
+            //  + -
+            new(new(28,1.85f,-179),new(26,3.5f,310-38f))
         ];
 
         // ++
@@ -449,12 +527,70 @@ class SimpleShot
             plat.Add(new(new(x,1.85f,-160),new(26,3.5f,310),1));
         }
 
+        for (int x = 347; x >= 28; x -= 29)
+        {
+            for (int z = -297; z <= -10; z += 23)
+            {
+                if (x <=28 && z>=-50) continue;
+                plat.Add(new(new(x,5.25f,z),new(1f, 3.5f, 7f), 2));
+            }
+        }
+
+        Botao Log = new(new Vector2(375, 200), new Vector2(150, 75), Color.DarkGray, "Login");
+        Botao Criar = new(new Vector2(360, 300), new Vector2(180, 75), Color.DarkGray, "Cadastrar");
+
+        TextBox A = new(new(225,200));
+
         float time_tiro = 0;
-        var teste = true;
+        var teste = false;
+        var login = false;
+        var create = false;
+        var logado = false;
         // float dano = 0;
         Raylib.SetTargetFPS(60);
         while (!Raylib.WindowShouldClose())
         {
+            while (!Raylib.WindowShouldClose() && !logado)
+            {
+                Vector2 mouse_pos = Raylib.GetMousePosition();
+                Rectangle recL = new(Log.pos.X,Log.pos.Y,Log.size.X,Log.size.Y);
+                Rectangle recC = new(Criar.pos.X,Criar.pos.Y,Criar.size.X,Criar.size.Y);
+                if (Raylib.CheckCollisionPointRec(mouse_pos, recL))
+                {
+                    Log.cor = Color.Gray;
+                    if(Raylib.IsMouseButtonDown(0)) {login=true;break;}
+                } else
+                {
+                    Log.cor = Color.DarkGray;
+                }
+                if (Raylib.CheckCollisionPointRec(mouse_pos, recC))
+                {
+                    Criar.cor = Color.Gray;
+                    if(Raylib.IsMouseButtonDown(0)) {create=true;break;}
+                } else
+                {
+                    Criar.cor = Color.DarkGray;
+                }
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.Blue);
+                Log.Desenhar();
+                Criar.Desenhar();
+                Raylib.EndDrawing();
+            }
+            while (!Raylib.WindowShouldClose() && login)
+            {
+                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                {
+                    A.apertado = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), A.area);
+                }
+                A.Receba();
+
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.Blue);
+                A.Aparecer();
+                Raylib.EndDrawing();
+            }
+
             while (!Raylib.WindowShouldClose() && jojo.vida > 0 && teste)
             {
                 float dt = Raylib.GetFrameTime();
@@ -481,7 +617,7 @@ class SimpleShot
                     
                 }
                 else if (Raylib.IsKeyReleased(KeyboardKey.Up) && jojo.saut_carregando) {jojo.pulando = true; jojo.saut_carregando = false;}
-                if (jojo.pulando) {jojo.Pulo(dt); jojo.ai_minha_cabeca(plat);}
+                if (jojo.pulando) {jojo.Pulo(dt); jojo.aiMinhaCabeca(plat);}
 
                 if (jojo.acl)
                 {
@@ -491,7 +627,7 @@ class SimpleShot
                     
                 } else jojo.vel = 10f;
 
-                joOffset = jojo.olhando switch
+                jo_offset = jojo.olhando switch
                 {
                     Direcao.Frente => new(0f, 0f, -7f),
                     Direcao.FrenteD => new(5f, 0f, -5.0f),
@@ -505,7 +641,7 @@ class SimpleShot
                 };
 
                 // cameraOffset = new(0f, 16f, 10f);
-                cameraOffset = jojo.olhando switch
+                camera_offset = jojo.olhando switch
                 {
                     Direcao.Frente => new(0f, 3f, 6f),
                     Direcao.FrenteD => new(-4.24f, 3f, 4.24f),
@@ -518,26 +654,26 @@ class SimpleShot
                     _ => new(0f, 3f, 4.24f)
                 };
 
-                camera.Target = jojo.onde + joOffset;
+                camera.Target = jojo.onde + jo_offset;
                 
-                camera.Position = jojo.onde + cameraOffset;
+                camera.Position = jojo.onde + camera_offset;
 
-                Vector3 origemCam = jojo.onde + new Vector3(0f, 0.8f, 0f);
-                Vector3 vetorCam = camera.Position - origemCam;
-                float distCam = vetorCam.Length();
-                Vector3 dirCam = Vector3.Normalize(vetorCam);
+                Vector3 origem_cam = jojo.onde + new Vector3(0f, 0.8f, 0f);
+                Vector3 vetor_cam = camera.Position - origem_cam;
+                float dist_cam = vetor_cam.Length();
+                Vector3 dir_cam = Vector3.Normalize(vetor_cam);
 
-                Ray rayCamera = new(origemCam, dirCam);
+                Ray ray_camera = new(origem_cam, dir_cam);
 
                 foreach (var i in plat)
                 {
                     if (Cubo.Distancia(jojo.hitbox[0], i.hitbox[0]) > 15f) continue;
 
-                    RayCollision colisao_cam = Raylib.GetRayCollisionBox(rayCamera, i.hitbox[0]);
-                    if (colisao_cam.Hit && colisao_cam.Distance < distCam)
+                    RayCollision colisao_cam = Raylib.GetRayCollisionBox(ray_camera, i.hitbox[0]);
+                    if (colisao_cam.Hit && colisao_cam.Distance < dist_cam)
                     {
-                        distCam = colisao_cam.Distance;
-                        camera.Position = colisao_cam.Point - (dirCam * 0.4f);
+                        dist_cam = colisao_cam.Distance;
+                        camera.Position = colisao_cam.Point - (dir_cam * 0.4f);
                     }
                 }
 
